@@ -133,6 +133,11 @@ public class SysUserServiceImpl implements ISysUserService
         return userMapper.selectUserByPhoneNumber(phoneNumber);
     }
 
+    @Override
+    public List<SysUser> selectUserListByUserIds(String userIds) {
+        return userMapper.selectUserListByUserIds(userIds);
+    }
+
     /**
      * 通过邮箱查询用户
      * 

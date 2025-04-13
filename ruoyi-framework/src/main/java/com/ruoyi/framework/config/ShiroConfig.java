@@ -318,6 +318,9 @@ public class ShiroConfig
         filterChainDefinitionMap.put("/**", "user,kickout,onlineSession,syncOnlineSession");
         shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);
 
+        // 添加Shiro内置过滤器
+        filterChainDefinitionMap.put("/websocket/**", "anon");  // 允许WebSocket连接
+
         return shiroFilterFactoryBean;
     }
 

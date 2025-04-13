@@ -20,6 +20,12 @@ public interface SysUserRoleMapper
     public List<SysUserRole> selectUserRoleByUserId(Long userId);
 
     /**
+     * 通过角色ID查询用户和角色关联
+     * @param roleId
+     * @return
+     */
+    public List<SysUserRole> selectUserRoleByRoleId(Long roleId);
+    /**
      * 通过用户ID删除用户和角色关联
      * 
      * @param userId 用户ID

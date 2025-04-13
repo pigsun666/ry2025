@@ -50,6 +50,7 @@ public interface SysUserMapper
      */
     public SysUser selectUserByPhoneNumber(String phoneNumber);
 
+    public List<SysUser> selectUserListByUserIds(String userIds);
     /**
      * 通过邮箱查询用户
      * 

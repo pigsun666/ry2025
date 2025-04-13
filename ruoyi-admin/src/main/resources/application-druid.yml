@@ -6,9 +6,11 @@ spring:
         druid:
             # 主库数据源
             master:
-                url: jdbc:mysql://localhost:3306/ry?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+                url: jdbc:mysql://localhost:3306/ry2025?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+#                username: ry2025
+#                password: 6ej88MfkfChex8Nk
                 username: root
-                password: password
+                password: 123456
             # 从库数据源
             slave:
                 # 从数据源开关/默认关闭
@@ -59,3 +61,10 @@ spring:
                 wall:
                     config:
                         multi-statement-allow: true
+    main:
+        allow-bean-definition-overriding: true
+websocket:
+    # 允许的域名
+    allowOrigins: "*"
+    # 端点路径
+    endpoint: /websocket/customer

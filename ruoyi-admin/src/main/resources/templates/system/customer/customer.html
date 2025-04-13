@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('客户列表')" />
+    <!-- 引入SockJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <style>
+        .notification-settings {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="gray-bg">
+     <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>电话号码：</label>
+                                <input type="text" name="customerTel"/>
+                            </li>
+                            <li>
+                                <label>状态：</label>
+                                <select name="stauts">
+                                    <option value="">未选择</option>
+                                    <option value="0">未跟踪</option>
+                                    <option value="1">无效</option>
+                                    <option value="2">有效</option>
+                                </select>
+                            </li>
+<!--                            <li>-->
+<!--                                <label>${comment}：</label>-->
+<!--                                <input type="text" class="time-input" placeholder="请选择${comment}" name="assignTime"/>-->
+<!--                            </li>-->
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="system:customer:add">
+                    <i class="fa fa-plus"></i> 添加
+                </a>
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()" shiro:hasPermission="system:customer:edit">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()" shiro:hasPermission="system:customer:remove">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+                <a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="system:customer:export">
+                    <i class="fa fa-download"></i> 导出
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加通知设置面板 -->
+    <div class="notification-settings">
+        <div style="margin-bottom: 10px;">
+            <button id="initAudio" class="btn btn-primary btn-sm">初始化提示音</button>
+        </div>
+        <label>
+            <input type="checkbox" id="notificationSound" checked> 开启提示音
+        </label>
+        <div id="audioStatus" style="font-size: 12px; color: #999; margin-top: 5px;">
+            提示音未初始化
+        </div>
+    </div>
+
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var viewFlag = [[${@permission.hasPermi('system:customer:list')}]];
+        var editFlag = [[${@permission.hasPermi('system:customer:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('system:customer:remove')}]];
+        var prefix = ctx + "system/customer";
+
+        // 预加载音频
+        var notificationAudio = new Audio(ctx + 'file/xm3463.mp3');
+        var notificationEnabled = true;
+        var audioInitialized = false;
+
+        // 初始化音频按钮点击事件
+        document.getElementById('initAudio').addEventListener('click', function() {
+            initializeAudio();
+        });
+
+        // 初始化音频
+        function initializeAudio() {
+            notificationAudio.load();
+            notificationAudio.play().then(() => {
+                notificationAudio.pause();
+                notificationAudio.currentTime = 0;
+                audioInitialized = true;
+                document.getElementById('audioStatus').textContent = '提示音已启用';
+                document.getElementById('audioStatus').style.color = '#28a745';
+                document.getElementById('initAudio').style.display = 'none';
+            }).catch((error) => {
+                console.log('Audio initialization failed:', error);
+                document.getElementById('audioStatus').textContent = '提示音初始化失败，请重试';
+                document.getElementById('audioStatus').style.color = '#dc3545';
+            });
+        }
+
+        // 监听通知开关
+        document.getElementById('notificationSound').addEventListener('change', function(e) {
+            notificationEnabled = e.target.checked;
+            if (notificationEnabled && !audioInitialized) {
+                document.getElementById('audioStatus').textContent = '请先点击"初始化提示音"按钮';
+                document.getElementById('audioStatus').style.color = '#ffc107';
+            }
+        });
+
+        // 播放通知声音
+        function playNotificationSound() {
+            if (notificationEnabled && audioInitialized && notificationAudio) {
+                notificationAudio.currentTime = 0;
+                notificationAudio.play().catch(function(error) {
+                    console.log('无法播放提示音:', error);
+                    // 如果播放失败，尝试重新初始化
+                    audioInitialized = false;
+                    document.getElementById('initAudio').style.display = 'block';
+                    document.getElementById('audioStatus').textContent = '提示音需要重新初始化';
+                    document.getElementById('audioStatus').style.color = '#ffc107';
+                });
+            }
+        }
+
+        function handleCustomer(customerId){
+            $.ajax({
+                type: "POST",
+                url: prefix + "/handleCustomer/" + customerId,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function(result) {
+                    if (result.code == web_status.SUCCESS) {
+                        $.modal.alertSuccess("操作成功");
+                        $.modal.close();
+                        $.table.refresh();
+                    } else {
+                        $.modal.alertError(result.msg);
+                    }
+                },
+                error: function() {
+                    $.modal.alertError("系统错误");
+                }
+            });
+        }
+
+        // 使用SockJS创建WebSocket连接
+        var socket = null;
+        var reconnectInterval = 5000; // 重连间隔5秒
+        var maxReconnectAttempts = 5; // 最大重连次数
+        var reconnectAttempts = 0;
+        var heartbeatInterval = null;
+
+        function connectWebSocket() {
+            if (socket) {
+                socket.close();
+            }
+
+            // 从页面获取当前登录用户ID
+            var currentUserId = [[${@permission.getPrincipalProperty('userId')}]];
+            
+            // 将用户ID添加到WebSocket URL中
+            var wsUrl = ctx + 'websocket/customer?userId=' + currentUserId;
+            socket = new SockJS(wsUrl);
+
+            socket.onopen = function() {
+                console.log('WebSocket连接已建立，用户ID:', currentUserId);
+                reconnectAttempts = 0; // 重置重连次数
+                startHeartbeat(); // 开始发送心跳
+            };
+
+            socket.onmessage = function(event) {
+                var data = JSON.parse(event.data);
+                console.log('收到消息:', data);
+                
+                switch(data.type) {
+                    case "connected":
+                        console.log("WebSocket连接成功");
+                        break;
+                    case "newCustomer":
+                        handleNewCustomer(data);
+                        break;
+                    case "pong":
+                        // 心跳响应，不需要处理
+                        break;
+                    case "error":
+                        console.error("服务器错误:", data.message);
+                        $.modal.alertError(data.message);
+                        break;
+                    default:
+                        console.log("收到未知类型消息:", data);
+                }
+            };
+
+            socket.onclose = function(event) {
+                console.log('WebSocket连接已关闭', event);
+                stopHeartbeat(); // 停止心跳
+                
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    console.log('尝试重新连接... 第' + (reconnectAttempts + 1) + '次');
+                    setTimeout(function() {
+                        reconnectAttempts++;
+                        connectWebSocket();
+                    }, reconnectInterval);
+                } else {
+                    console.log('达到最大重连次数，停止重连');
+                    $.modal.alertError("WebSocket连接失败，请刷新页面重试");
+                }
+            };
+
+            socket.onerror = function(error) {
+                console.error('WebSocket错误:', error);
+                stopHeartbeat(); // 停止心跳
+            };
+        }
+
+        function startHeartbeat() {
+            // 每30秒发送一次心跳
+            heartbeatInterval = setInterval(function() {
+                if (socket && socket.readyState === SockJS.OPEN) {
+                    sendMessage({
+                        type: "ping"
+                    });
+                }
+            }, 30000);
+        }
+
+        function stopHeartbeat() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+        }
+
+        function sendMessage(message) {
+            if (socket && socket.readyState === SockJS.OPEN) {
+                socket.send(JSON.stringify(message));
+            } else {
+                console.error('WebSocket未连接');
+            }
+        }
+
+        function handleNewCustomer(data) {
+            // 播放提示音
+            playNotificationSound();
+            
+            // 显示提示框
+            // $.modal.alertWarning("新客户通知：" + data.message);
+            
+            // 刷新表格
+            $.table.refresh();
+        }
+
+        // 在页面加载完成后预加载音频
+        $(function() {
+            // 预加载音频
+            notificationAudio.load();
+            
+            // 监听页面的任意点击事件来初始化音频
+            function initAudioOnInteraction() {
+                // 移除点击事件监听器
+                document.removeEventListener('click', initAudioOnInteraction);
+                // 自动触发初始化按钮点击
+                document.getElementById('initAudio').click();
+            }
+
+            // 添加点击事件监听器
+            document.addEventListener('click', initAudioOnInteraction);
+
+            // 在页面滚动时也尝试初始化
+            function initAudioOnScroll() {
+                // 移除滚动事件监听器
+                window.removeEventListener('scroll', initAudioOnScroll);
+                // 自动触发初始化按钮点击
+                document.getElementById('initAudio').click();
+            }
+
+            // 添加滚动事件监听器
+            window.addEventListener('scroll', initAudioOnScroll);
+
+            // 5秒后自动尝试初始化一次
+            setTimeout(function() {
+                if (!audioInitialized) {
+                    document.getElementById('initAudio').click();
+                }
+            }, 5000);
+
+            connectWebSocket();
+        });
+
+        // 页面关闭前关闭连接
+        $(window).on('beforeunload', function() {
+            if (socket) {
+                socket.close();
+            }
+            stopHeartbeat();
+        });
+
+        $(function() {
+            var options = {
+                url: prefix + "/list",
+                createUrl: prefix + "/add",
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove",
+                viewUrl: prefix + "/view/{id}",
+                exportUrl: prefix + "/export",
+                modalName: "客户",
+                columns: [{
+                    checkbox: true
+                },
+                {
+                    field: 'customerId',
+                    title: '客户id',
+                    visible: false
+                },
+                {
+                    field: 'customerTel',
+                    title: '客户电话'
+                },
+                {
+                    field: 'attachment',
+                    title: '附件',
+                    visible: false
+                },
+                {
+                    field: 'stauts',
+                    title: '状态',
+                    formatter: function(value, row, index) {
+                        if(value === "1"){
+                            return "无效";
+                        }else if(value === "2"){
+                            return "有效"
+                        }else return "未跟踪"
+                    }
+                },
+                {
+                    field: 'userId',
+                    title: '用户id',
+                    visible: false
+                },
+                {
+                    field: 'assignTime',
+                    title: '指派时间'
+                },
+                {
+                    field: 'assignType',
+                    title: '指派状态',
+                    formatter: function(value, row, index) {
+                        return value === "1" ? "已指派":"未指派";
+                    }
+                },
+                {
+                    title: '操作',
+                    align: 'center',
+                    formatter: function(value, row, index) {
+                        var actions = [];
+                        actions.push('<a class="btn btn-success btn-xs ' + '" href="javascript:void(0)" onclick="$.operate.view(\'' + row.customerId + '\')">查看</a> ');
+                        actions.push('<a class="btn btn-success btn-xs ' + '" href="javascript:void(0)" onclick="showStatusModal(\'' + row.customerId + '\')">完结</a> ');
+                        actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.customerId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.customerId + '\')"><i class="fa fa-remove"></i>删除</a>');
+                        return actions.join('');
+                    }
+                }]
+            };
+            $.table.init(options);
+        });
+
+        // 显示状态选择模态框
+        function showStatusModal(customerId) {
+            var content = '<div class="modal-dialog">' +
+                '<div class="modal-content" style="border-radius: 8px;">' +
+                '<div class="modal-body" style="padding: 30px 20px;">' +
+                '<div class="row">' +
+                '<div class="col-xs-12 text-center">' +
+                '<p style="margin: 20px 0 40px; font-size: 18px; color: #333;">请选择客户状态</p>' +
+                '<div style="padding: 0 20px;">' +
+                '<button type="button" class="btn btn-success btn-block" style="height: 60px; font-size: 18px; margin-bottom: 20px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="handleCustomerWithStatus(\'' + customerId + '\', \'2\')">有效</button>' +
+                '<button type="button" class="btn btn-danger btn-block" style="height: 60px; font-size: 18px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="handleCustomerWithStatus(\'' + customerId + '\', \'1\')">无效</button>' +
+                '</div>' +
+                '</div>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+            
+            // 根据屏幕宽度设置不同的宽度
+            var screenWidth = window.innerWidth;
+            var modalWidth = screenWidth < 768 ? '90%' : '500px';
+            var modalHeight = screenWidth < 768 ? '320px' : '350px';
+            
+            layer.open({
+                type: 1,
+                area: [modalWidth, modalHeight],
+                fix: false,
+                maxmin: false,  // 禁用最大化最小化按钮
+                shade: 0.4,    // 加深遮罩
+                title: false,  // 不显示标题
+                content: content,
+                shadeClose: true,
+                success: function(layero, index) {
+                    // 为移动端添加额外的样式
+                    if(screenWidth < 768) {
+                        $(layero).find('.layui-layer').css({
+                            'width': '90% !important',
+                            'left': '5% !important'
+                        });
+                    }
+                    // 添加动画效果
+                    $(layero).find('.btn').hover(
+                        function() {
+                            $(this).css('transform', 'translateY(-2px)');
+                        },
+                        function() {
+                            $(this).css('transform', 'translateY(0)');
+                        }
+                    );
+                }
+            });
+        }
+
+        // 处理客户状态
+        function handleCustomerWithStatus(customerId, status) {
+            $.ajax({
+                type: "POST",
+                url: prefix + "/handleCustomer/" + customerId,
+                data: {
+                    "stauts": status
+                },
+                success: function(result) {
+                    if (result.code == web_status.SUCCESS) {
+                        layer.closeAll(); // 关闭所有弹出层
+                        $.table.refresh(); // 刷新表格数据
+                        $.modal.msgSuccess("操作成功"); // 显示成功提示
+                    } else {
+                        $.modal.alertError(result.msg);
+                    }
+                },
+                error: function() {
+                    $.modal.alertError("系统错误");
+                }
+            });
+        }
+    </script>
+</body>
+</html>

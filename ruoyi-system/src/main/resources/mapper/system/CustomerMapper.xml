@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.CustomerMapper">
+    
+    <resultMap type="Customer" id="CustomerResult">
+        <result property="customerId"    column="customer_id"    />
+        <result property="customerTel"    column="customer_tel"    />
+        <result property="attachment"    column="attachment"    />
+        <result property="stauts"    column="stauts"    />
+        <result property="userId"    column="user_id"    />
+        <result property="assignTime"    column="assign_time"    />
+        <result property="assignType"    column="assign_type"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="saleId" column="sale_id"/>
+        <result property="saleName" column="sale_name"/>
+    </resultMap>
+
+    <sql id="selectCustomerVo">
+        select customer_id, customer_tel, attachment, stauts, user_id, assign_time, assign_type, create_time from customer
+    </sql>
+
+    <select id="selectCustomerList" parameterType="Customer" resultMap="CustomerResult">
+        <include refid="selectCustomerVo"/>
+        <where>  
+            <if test="customerTel != null  and customerTel != ''"> and customer_tel = #{customerTel}</if>
+            <if test="attachment != null  and attachment != ''"> and attachment = #{attachment}</if>
+            <if test="stauts != null  and stauts != ''"> and stauts = #{stauts}</if>
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="assignTime != null "> and assign_time = #{assignTime}</if>
+            <if test="assignType != null  and assignType != ''"> and assign_type = #{assignType}</if>
+            <if test="saleId != null "> and sale_id = #{saleId}</if>
+        </where>
+        order by assign_time DESC
+    </select>
+    
+    <select id="selectCustomerByCustomerId" parameterType="Long" resultMap="CustomerResult">
+        <include refid="selectCustomerVo"/>
+        where customer_id = #{customerId}
+    </select>
+
+    <insert id="insertCustomer" parameterType="Customer">
+        insert into customer
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="customerId != null">customer_id,</if>
+            <if test="customerTel != null">customer_tel,</if>
+            <if test="attachment != null">attachment,</if>
+            <if test="stauts != null">stauts,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="assignTime != null">assign_time,</if>
+            <if test="assignType != null">assign_type,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="saleId != null">sale_id,</if>
+            <if test="saleName != null">sale_name,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="customerId != null">#{customerId},</if>
+            <if test="customerTel != null">#{customerTel},</if>
+            <if test="attachment != null">#{attachment},</if>
+            <if test="stauts != null">#{stauts},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="assignTime != null">#{assignTime},</if>
+            <if test="assignType != null">#{assignType},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="saleId != null">#{saleId},</if>
+            <if test="saleName != null">#{salName},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCustomer" parameterType="Customer">
+        update customer
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="customerTel != null">customer_tel = #{customerTel},</if>
+            <if test="attachment != null">attachment = #{attachment},</if>
+            <if test="stauts != null">stauts = #{stauts},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="assignTime != null">assign_time = #{assignTime},</if>
+            <if test="assignType != null">assign_type = #{assignType},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </trim>
+        where customer_id = #{customerId}
+    </update>
+
+    <delete id="deleteCustomerByCustomerId" parameterType="Long">
+        delete from customer where customer_id = #{customerId}
+    </delete>
+
+    <delete id="deleteCustomerByCustomerIds" parameterType="String">
+        delete from customer where customer_id in 
+        <foreach item="customerId" collection="array" open="(" separator="," close=")">
+            #{customerId}
+        </foreach>
+    </delete>
+
+</mapper>

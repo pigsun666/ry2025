@@ -43,6 +43,12 @@
             <version>1.6.2</version>
         </dependency>
 
+        <!-- SpringBoot WebSocket -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
         <!-- Mysql驱动包 -->
         <dependency>
             <groupId>mysql</groupId>

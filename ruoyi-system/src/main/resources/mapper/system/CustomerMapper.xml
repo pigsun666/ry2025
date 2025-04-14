@@ -10,6 +10,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="attachment"    column="attachment"    />
         <result property="stauts"    column="stauts"    />
         <result property="userId"    column="user_id"    />
+        <result property="userName"    column="user_name"    />
         <result property="assignTime"    column="assign_time"    />
         <result property="assignType"    column="assign_type"    />
         <result property="createTime"    column="create_time"    />
@@ -18,7 +19,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectCustomerVo">
-        select customer_id, customer_tel, attachment, stauts, user_id, assign_time, assign_type, create_time from customer
+        select customer_id, customer_tel, attachment, stauts, user_id,user_name, assign_time, assign_type, create_time,sale_id,sale_name from customer
     </sql>
 
     <select id="selectCustomerList" parameterType="Customer" resultMap="CustomerResult">
@@ -32,7 +33,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="assignType != null  and assignType != ''"> and assign_type = #{assignType}</if>
             <if test="saleId != null "> and sale_id = #{saleId}</if>
         </where>
-        order by assign_time DESC
+        order by create_time DESC,assign_time DESC
     </select>
     
     <select id="selectCustomerByCustomerId" parameterType="Long" resultMap="CustomerResult">
@@ -48,6 +49,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="attachment != null">attachment,</if>
             <if test="stauts != null">stauts,</if>
             <if test="userId != null">user_id,</if>
+            <if test="userName != null">user_name,</if>
             <if test="assignTime != null">assign_time,</if>
             <if test="assignType != null">assign_type,</if>
             <if test="createTime != null">create_time,</if>
@@ -60,6 +62,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="attachment != null">#{attachment},</if>
             <if test="stauts != null">#{stauts},</if>
             <if test="userId != null">#{userId},</if>
+            <if test="userName != null">#{userName},</if>
             <if test="assignTime != null">#{assignTime},</if>
             <if test="assignType != null">#{assignType},</if>
             <if test="createTime != null">#{createTime},</if>
@@ -75,6 +78,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="attachment != null">attachment = #{attachment},</if>
             <if test="stauts != null">stauts = #{stauts},</if>
             <if test="userId != null">user_id = #{userId},</if>
+            <if test="userName != null">user_name = #{userName},</if>
             <if test="assignTime != null">assign_time = #{assignTime},</if>
             <if test="assignType != null">assign_type = #{assignType},</if>
             <if test="createTime != null">create_time = #{createTime},</if>

@@ -82,6 +82,12 @@ public class CustomerBox {
             
             // 只发送给被分配的业务员
             customerWebSocketHandler.sendMessageToUser(salesRep.getUserId().toString(), notification.toString());
+
+            //填充userName
+            SysUser userInfo = userService.selectUserById(customer.getUserId());
+            if(userInfo != null){
+                customer.setUserName(userInfo.getUserName());
+            }
         }
     }
 }

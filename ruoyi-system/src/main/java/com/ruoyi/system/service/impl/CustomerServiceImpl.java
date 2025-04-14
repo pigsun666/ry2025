@@ -3,8 +3,10 @@ package com.ruoyi.system.service.impl;
 import java.util.List;
 
 import com.alibaba.fastjson.JSONObject;
+import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.uuid.UUID;
+import com.ruoyi.system.service.ISysUserService;
 import com.ruoyi.system.websocket.handler.CustomerWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,8 @@ public class CustomerServiceImpl implements ICustomerService
     @Autowired
     private CustomerWebSocketHandler customerWebSocketHandler;
 
+    @Autowired
+    private ISysUserService userService;
     /**
      * 查询【请填写功能名称】
      * 
@@ -76,12 +80,22 @@ public class CustomerServiceImpl implements ICustomerService
 
             // 只发送给被分配的业务员
             customerWebSocketHandler.sendMessageToUser(customer.getUserId().toString(), notification.toString());
+            //填充userName
+            SysUser userInfo = getUserInfo(customer.getUserId());
+            if(userInfo != null){
+                customer.setUserName(userInfo.getUserName());
+            }
             customer.setAssignType("1");
             customer.setAssignTime(DateUtils.getNowDate());
         }
         return customerMapper.insertCustomer(customer);
     }
 
+
+    private SysUser getUserInfo(Long userId){
+        SysUser user = userService.selectUserById(userId);
+        return user;
+    }
     /**
      * 修改【请填写功能名称】
      * 
@@ -103,6 +117,11 @@ public class CustomerServiceImpl implements ICustomerService
 
             // 只发送给被分配的业务员
             customerWebSocketHandler.sendMessageToUser(customer.getUserId().toString(), notification.toString());
+            //填充userName
+            SysUser userInfo = getUserInfo(customer.getUserId());
+            if(userInfo != null){
+                customer.setUserName(userInfo.getUserName());
+            }
             customer.setAssignType("1");
             customer.setAssignTime(DateUtils.getNowDate());
             customer.setCreateTime(DateUtils.getNowDate());

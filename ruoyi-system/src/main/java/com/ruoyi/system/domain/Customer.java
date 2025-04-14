@@ -33,8 +33,11 @@ public class Customer extends BaseEntity
     private String stauts;
 
     /** $column.columnComment */
-    @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
+    @Excel(name = "业务员id", readConverterExp = "$column.readConverterExp()")
     private Long userId;
+
+    @Excel(name = "业务员姓名", readConverterExp = "$column.readConverterExp()")
+    private String userName;
 
     /** $column.columnComment */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
@@ -45,11 +48,11 @@ public class Customer extends BaseEntity
     private String assignType;
 
     /** $column.columnComment */
-    @Excel(name = "销售id", readConverterExp = "$column.readConverterExp()")
+    @Excel(name = "引流id", readConverterExp = "$column.readConverterExp()")
     private Long saleId;
 
     /** $column.columnComment */
-    @Excel(name = "销售姓名", readConverterExp = "$column.readConverterExp()")
+    @Excel(name = "引流姓名", readConverterExp = "$column.readConverterExp()")
     private String saleName;
 
     public void setCustomerId(Long customerId) 
@@ -138,6 +141,14 @@ public class Customer extends BaseEntity
         this.saleName = saleName;
     }
 
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -146,6 +157,7 @@ public class Customer extends BaseEntity
             .append("attachment", getAttachment())
             .append("stauts", getStauts())
             .append("userId", getUserId())
+            .append("userName", getUserName())
             .append("saleId", getSaleId())
             .append("saleName", getSaleName())
             .append("assignTime", getAssignTime())

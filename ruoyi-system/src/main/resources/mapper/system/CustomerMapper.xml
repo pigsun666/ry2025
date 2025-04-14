@@ -64,7 +64,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="assignType != null">#{assignType},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="saleId != null">#{saleId},</if>
-            <if test="saleName != null">#{salName},</if>
+            <if test="saleName != null">#{saleName},</if>
          </trim>
     </insert>
 
